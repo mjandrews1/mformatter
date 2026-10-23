@@ -62,13 +62,18 @@ public final class MFormatter {
     private static final Map<String, String> SV_EXPAND = new LinkedHashMap<>();
     static {
         SV_EXPAND.put("C", "CHAR");
+        // Special variable abbreviations (ISO 8.1.2 / RSM)
+        SV_EXPAND.put("A", "ASCII");
+        SV_EXPAND.put("C", "CHAR");
         SV_EXPAND.put("D", "DATA");
-        SV_EXPAND.put("E", "EXTRACT");
+        SV_EXPAND.put("EC", "ECODE");
+        SV_EXPAND.put("ES", "ESTACK");
+        SV_EXPAND.put("ET", "ETRAP");
         SV_EXPAND.put("F", "FIND");
         SV_EXPAND.put("G", "GET");
         SV_EXPAND.put("H", "HOROLOG");
         SV_EXPAND.put("I", "INCREMENT");
-        SV_EXPAND.put("J", "JOB");
+        SV_EXPAND.put("J", "JUSTIFY");  // NOT JOB - $J is $JUSTIFY
         SV_EXPAND.put("K", "KEY");
         SV_EXPAND.put("L", "LENGTH");
         SV_EXPAND.put("NA", "NAME");
@@ -78,18 +83,20 @@ public final class MFormatter {
         SV_EXPAND.put("QS", "QSUBSCRIPT");
         SV_EXPAND.put("Q", "QUERY");
         SV_EXPAND.put("R", "RANDOM");
-        SV_EXPAND.put("S", "STACK");
-        SV_EXPAND.put("ST", "TEXT");
+        SV_EXPAND.put("ST", "STACK");
+        SV_EXPAND.put("S", "SELECT");  // $S(...) is $SELECT
         SV_EXPAND.put("T", "TEXT");
+        SV_EXPAND.put("TL", "TLEVEL");
+        SV_EXPAND.put("TR", "TRANSLATE");  // $TR is $TRANSLATE, not $TRESTART
         SV_EXPAND.put("V", "VIEW");
         SV_EXPAND.put("X", "X");
         SV_EXPAND.put("Y", "Y");
         SV_EXPAND.put("Z", "Z");
         // Full names (identity)
-        for (String full : new String[]{"ASCII","CHAR","DATA","EXTRACT","FIND",
-                "GET","HOROLOG","INCREMENT","JOB","KEY","LENGTH","NAME","ORDER",
-                "PIECE","QLENGTH","QSUBSCRIPT","QUERY","RANDOM","STACK","TEXT",
-                "VIEW","X","Y","Z"}) {
+        for (String full : new String[]{"ASCII","CHAR","DATA","ECODE","ESTACK","ETRAP",
+                "FIND","GET","HOROLOG","INCREMENT","JUSTIFY","KEY","LENGTH","NAME","ORDER",
+                "PIECE","QLENGTH","QSUBSCRIPT","QUERY","RANDOM","SELECT","STACK","TEXT",
+                "TRANSLATE","TLEVEL","TRESTART","VIEW","X","Y","Z"}) {
             SV_EXPAND.put(full, full);
         }
     }
@@ -307,6 +314,31 @@ public final class MFormatter {
                 while (j < body.length() && Character.isLetter(body.charAt(j))) j++;
                 String name = body.substring(i + 1, j);
                 String up = name.toUpperCase();
+                // $S is special: $S(...) is $SELECT, bare $S is $STACK
+                if (up.equals("S") || up.equals("SEL") || up.equals("SELE") || up.equals("SELEC") || up.equals("SELECT")) {
+                    // Check if followed by (
+                    int next = j;
+                    while (next < body.length() && body.charAt(next) == ' ') next++;
+                    if (next < body.length() && body.charAt(next) == '(') {
+                        sb.append("$SELECT");
+                    } else {
+                        sb.append("$STACK");
+                    }
+                    i = j;
+                    continue;
+                }
+                // $Q is special: $Q(...) is $QUERY, bare $Q is $QUIT
+                if (up.equals("Q") || up.equals("QU") || up.equals("QUE") || up.equals("QUER") || up.equals("QUERY")) {
+                    int next = j;
+                    while (next < body.length() && body.charAt(next) == ' ') next++;
+                    if (next < body.length() && body.charAt(next) == '(') {
+                        sb.append("$QUERY");
+                    } else {
+                        sb.append("$QUIT");
+                    }
+                    i = j;
+                    continue;
+                }
                 // Try longest abbreviation match
                 String expanded = expandOneSvName(up);
                 sb.append('$').append(expanded);
