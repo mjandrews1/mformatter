@@ -1161,9 +1161,9 @@ public final class MFormatter {
 
         String source;
         if (file != null) {
-            source = Files.readString(Path.of(file));
+            source = new String(Files.readAllBytes(Path.of(file)), java.nio.charset.StandardCharsets.ISO_8859_1);
         } else {
-            source = new String(System.in.readAllBytes());
+            source = new String(System.in.readAllBytes(), java.nio.charset.StandardCharsets.ISO_8859_1);
         }
 
         MFormatter fmt = new MFormatter(indent, breakLines);
